@@ -1,0 +1,71 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract TokenGenerator is Ownable {
+    ERC20 public token;
+
+    uint256 public transactionFeeToGenerateLiquidity;
+    uint256 public transactionFeeToGenerateMarket;
+    uint256 public marketFeePercentage;
+    uint256 public transactionFeePercentage;
+    uint256 public charityFeePercentage;
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        uint8 _decimals,
+        uint256 _initialSupply,
+        uint256 _transactionFeeToGenerateLiquidity,
+        uint256 _transactionFeeToGenerateMarket,
+        uint256 _marketFeePercentage,
+        uint256 _transactionFeePercentage,
+        uint256 _charityFeePercentage
+    ) {
+        token = new ERC20(_name, _symbol);
+        token._mint(msg.sender, _initialSupply * (10**uint256(_decimals)));
+
+        transactionFeeToGenerateLiquidity = _transactionFeeToGenerateLiquidity;
+        transactionFeeToGenerateMarket = _transactionFeeToGenerateMarket;
+        marketFeePercentage = _marketFeePercentage;
+        transactionFeePercentage = _transactionFeePercentage;
+        charityFeePercentage = _charityFeePercentage;
+    }
+
+    function setFees(
+        uint256 _transactionFeeToGenerateLiquidity,
+        uint256 _transactionFeeToGenerateMarket,
+        uint256 _marketFeePercentage,
+        uint256 _transactionFeePercentage,
+        uint256 _charityFeePercentage
+    ) external onlyOwner {
+        transactionFeeToGenerateLiquidity = _transactionFeeToGenerateLiquidity;
+        transactionFeeToGenerateMarket = _transactionFeeToGenerateMarket;
+        marketFeePercentage = _marketFeePercentage;
+        transactionFeePercentage = _transactionFeePercentage;
+        charityFeePercentage = _charityFeePercentage;
+    }
+
+    function generateTokens() external payable {
+        require(msg.value >= transactionFeeToGenerateLiquidity, "Insufficient fee");
+
+        // Distribute fees
+        uint256 marketFee = (msg.value * marketFeePercentage) / 100;
+        uint256 transactionFee = (msg.value * transactionFeePercentage) / 100;
+        uint256 charityFee = (msg.value * charityFeePercentage) / 100;
+
+        // Perform token minting
+        token._mint(msg.sender, 100); // Example minting 100 tokens
+
+        // Transfer fees
+        address payable marketAddress = payable(owner());
+        address payable transactionFeeAddress = payable(owner()); // Change to appropriate address
+        address payable charityAddress = payable(owner()); // Change to appropriate address
+
+        marketAddress.transfer(marketFee);
+        transactionFeeAddress.transfer(transactionFee);
+        charityAddress.transfer(charityFee);
+    }
+}
